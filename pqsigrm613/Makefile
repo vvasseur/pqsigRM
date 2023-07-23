@@ -23,7 +23,10 @@ sign: ${OBJS} ./PQCgenKAT_sign.c
 runtime: ${OBJS} ./runtime.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
-test: ${OBJS} ./test.c
+keygen_and_sign: ${OBJS} ./keygen_and_sign.c
+	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
+
+get_matched_pairs: ${OBJS} ./get_matched_pairs.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
 
@@ -34,4 +37,4 @@ api.o : api.h
 clean:
 	cd src; rm -f *.o; cd ..
 	rm -f *.o
-	rm -f sign runtime
+	rm -f sign runtime keygen_and_sign get_matched_pairs
