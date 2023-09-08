@@ -76,20 +76,22 @@ def find_swaps(HP):
 
     # The permutation of two matched pairs in GP is in fact a linear operation
     # on GP * J. In this loop we precompute all the differences.
-    GPJ2 = copy(GPJ)
     equations_row = [matrix(GF(2), R, len_U2) for i in range(dim_VA)]
     for i in range(R):
         if i % ((R + 19) // 20) == 0:
             print(".", file=sys.stderr, end="")
 
-        GPJ2[:, i + R] += GPJ2[:, i]
-        GPJ2.echelonize()
-        diff = GPJ[:dim_VA, supp_U2] + GPJ2[:dim_VA, supp_U2]
-        for j in range(dim_VA):
-            equations_row[j][i] = diff[j]
-
-        # Reverse previous operations
-        GPJ2[:, i + R] += GPJ2[:, i]
+        column_left = GPJ[:dim_VA, i]
+        support_indices = [j for j, cj in enumerate(column_left) if cj[0] == 1]
+        if i in pivots_U:
+            r = pivots_U.index(i)
+            row_right = GPJ[dim_VA + r, supp_U2]
+            for j in support_indices:
+                equations_row[j][i] = row_right
+        else:
+            i2 = supp_U2.index(R + i)
+            for j in support_indices:
+                equations_row[j][i, i2] = 1
     print("", file=sys.stderr)
 
     # This heuristic finds a permutation while handling the appended rows. In
@@ -104,6 +106,9 @@ def find_swaps(HP):
         for j in range(dim_VA):
             if j % ((dim_VA + 19) // 20) == 0:
                 print(".", file=sys.stderr, end="")
+
+            if vector(GPJ[j, supp_U2]) == 0:
+                continue
 
             A = equations_row[j]
             if unsolved:

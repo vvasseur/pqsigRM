@@ -40,7 +40,7 @@ You can execute this by running `attack.sh`
 
 ## Execution time
 
-Approximately 3 hours.
+Approximately 20 minutes.
 
 ## Dependencies
 
