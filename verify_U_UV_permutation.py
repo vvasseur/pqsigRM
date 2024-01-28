@@ -2,23 +2,14 @@ import pqsigrm
 import sys
 
 
-def check_permutation(Q, P):
-    return (
-        (
-            set([P[Q.index(i)] for i in range(pqsigrm.CODE_N // 2)])
-            == set(range(pqsigrm.CODE_N // 2))
-        )
-        and (
-            set([P[Q.index(i)] for i in range(pqsigrm.CODE_N // 2, pqsigrm.CODE_N)])
-            == set(range(pqsigrm.CODE_N // 2, pqsigrm.CODE_N))
-        )
-        and all(
-            [
-                P[Q.index(i + pqsigrm.CODE_N // 2)]
-                == P[Q.index(i)] + pqsigrm.CODE_N // 2
-                for i in range(pqsigrm.CODE_N // 2)
-            ]
-        )
+def check_permutation(Q, P, depth):
+    delta = 8192 // 2**depth
+    tests = [i * delta for i in range(2**depth)]
+
+    Q_Pinv = [Q[P.index(i)] for i in range(pqsigrm.CODE_N)]
+
+    return all(
+        [[Q_Pinv[i + j] - Q_Pinv[i] for j in tests] == tests for i in range(delta)]
     )
 
 
@@ -33,4 +24,4 @@ if __name__ == "__main__":
     Q = pqsigrm.get_uint16s(filename_sk, pqsigrm.CODE_N)
     P = pqsigrm.get_uint16s(filename_perm, pqsigrm.CODE_N)
 
-    print(check_permutation(Q, P))
+    print(check_permutation(Q, P, 2))

@@ -1,5 +1,5 @@
 cd pqsigrm613/
-make keygen_and_sign get_matched_pairs
+make keygen_and_sign get_matched_pairs signatures.so
 cd -
 
 echo "Generating a keypair and 1000 signatures"

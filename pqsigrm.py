@@ -1,3 +1,5 @@
+from pqsigrm_ctypes import Correlation, Signatures
+
 import struct
 
 CODE_K = 4096
@@ -13,6 +15,9 @@ LEN_T = CODE_K + 1
 K_APP = 2
 DIM_U = 2508
 DIM_V = 1587
+
+CODE_R = 6
+CODE_M = 13
 
 
 def read_matrix(filename, nrows, ncols):
