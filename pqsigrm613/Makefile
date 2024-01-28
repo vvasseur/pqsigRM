@@ -10,7 +10,7 @@ OBJS = ${CFILES}
 ifeq ($(DEBUG), 1)
     DBG_FLAGS = -g -O0 -DDEBUG
 else
-    DBG_FLAGS = -O2 -DNDEBUG -Wunused-variable -Wunused-function
+    DBG_FLAGS = -O3 -march=native -fopenmp -DNDEBUG -Wunused-variable -Wunused-function
 endif
 
 
@@ -26,9 +26,8 @@ runtime: ${OBJS} ./runtime.c
 keygen_and_sign: ${OBJS} ./keygen_and_sign.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
-get_matched_pairs: ${OBJS} ./get_matched_pairs.c
+get_matched_pairs: ${OBJS} ./get_matched_pairs.c ./signatures.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
-
 
 matrix.o : matrix.h
 rng.o : rng.h

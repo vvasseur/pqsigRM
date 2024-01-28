@@ -1,6 +1,5 @@
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include "signatures.h"
 #include "src/api.h"
 #include "src/parm.h"
 
@@ -42,13 +41,31 @@ unsigned char *read_bin(const char *filename, size_t *size) {
 
 typedef struct pair {
     uint64_t key;
-    uint64_t value;
+    double value;
 } pair;
 
 static int pair_comp(const void *pa, const void *pb) {
-    int64_t a = ((pair *)pa)->value;
-    int64_t b = ((pair *)pb)->value;
-    return (a > b) - (a < b);
+    double a = ((pair *)pa)->value;
+    double b = ((pair *)pb)->value;
+    return (a < b) - (a > b);
+}
+
+int compute_matched_pairs(size_t *pairs, double pearson[CODE_N][CODE_N],
+                          size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        pair dict[len];
+        for (size_t k = 0; k < len; ++k) {
+            dict[k].key = k;
+            dict[k].value = pearson[i][k];
+        }
+        qsort(dict, len, sizeof(pair), pair_comp);
+        pairs[i] = dict[0].key;
+    }
+    int ok = 1;
+    for (size_t i = 0; i < len; ++i) {
+        ok = ok && (pairs[pairs[i]] == i);
+    }
+    return ok;
 }
 
 int main(int argc, char **argv) {
@@ -65,53 +82,37 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    uint64_t(*correlation)[CODE_N] = calloc(CODE_N * CODE_N, sizeof(uint64_t));
-    if (correlation == NULL) {
+    double(*pearson)[CODE_N] = calloc(CODE_N * CODE_N, sizeof(double));
+    if (pearson == NULL) {
         printf("Failed to allocate memory for the correlation table.\n");
         free(sigs);
         return -1;
     }
 
-    size_t n = size / (MLEN + CRYPTO_BYTES);
+    size_t n = size / (8 + MLEN + CRYPTO_BYTES);
 
     // Only consider the error part of the signatures.
-    unsigned char *e = &sigs[8 + MLEN];
+    unsigned char(*e)[MLEN + CRYPTO_BYTES] =
+        (unsigned char(*)[MLEN + CRYPTO_BYTES]) & sigs[8 + MLEN];
+    size_t pairs[CODE_N];
 
-    for (size_t i = 0; i < n; i++) {
-        if (i % (n / 20) == 0)
-            fprintf(stderr, ".");
+    // Stage 1
+    tables *t = init_tables(CODE_N);
 
-        for (size_t j = 0; j < CODE_N; ++j) {
-            uint64_t ej = e[j / 8] >> (j % 8) & 1;
-            for (size_t k = j + 1; k < CODE_N; ++k) {
-                uint64_t ek = e[k / 8] >> (k % 8) & 1;
-                correlation[j][k] += ej ^ ek;
-            }
-        }
-        e += MLEN + CRYPTO_BYTES;
-    }
-    // Correlations are symmetric so we only computed half of them in the loops
-    // above.
-    for (size_t j = 0; j < CODE_N; ++j) {
-        for (size_t k = j + 1; k < CODE_N; ++k) {
-            correlation[k][j] = correlation[j][k];
-        }
-    }
-    fprintf(stderr, "\n");
+    update_correlation(t, e, CODE_N, n);
+    finish_correlation(pearson, t, CODE_N);
+    fprintf(stderr, "Correlations done\n");
 
     // Output the matched pairs.
+    int ok = compute_matched_pairs(pairs, pearson, CODE_N);
+    fprintf(stderr, "Matched pairs %d\n", ok);
     for (size_t i = 0; i < CODE_N; ++i) {
-        pair dict[CODE_N];
-        for (size_t k = 0; k < CODE_N; ++k) {
-            dict[k].key = k;
-            dict[k].value = correlation[i][k];
-        }
-        qsort(dict, CODE_N, sizeof(pair), pair_comp);
-
-        printf("%ld %ld\n", i, dict[1].key);
+        printf("%ld %ld\n", i, pairs[i]);
     }
 
-    free(correlation);
+    free_tables(t);
+    free(pearson);
+
     free(sigs);
 
     return 0;
